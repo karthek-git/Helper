@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<color name="colorLiiDark">#1D1D1D</color>
+	<color name="colorMain">@android:color/white</color>
+	<color name="colorMainBackGround">@android:color/black</color>
+</resources>
