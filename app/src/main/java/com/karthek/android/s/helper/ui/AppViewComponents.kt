@@ -59,6 +59,7 @@ import com.google.accompanist.insets.LocalWindowInsets
 import com.google.accompanist.insets.navigationBarsPadding
 import com.google.accompanist.insets.rememberInsetsPaddingValues
 import com.google.accompanist.insets.statusBarsPadding
+import com.karthek.android.s.helper.BuildConfig
 import com.karthek.android.s.helper.SettingsActivity
 import com.karthek.android.s.helper.state.db.App
 import com.karthek.android.s.helper.ui.components.MemUsage
@@ -359,7 +360,7 @@ fun AppOptions(
 				Intent.EXTRA_STREAM,
 				FileProvider.getUriForFile(
 					context,
-					"com.karthek.android.s.helper.fileprovider",
+					"${BuildConfig.APPLICATION_ID}.fileprovider",
 					f,
 					"${app.label}.apk"
 				)
