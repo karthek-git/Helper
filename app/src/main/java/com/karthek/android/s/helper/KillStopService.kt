@@ -95,6 +95,7 @@ class KillStopService : AccessibilityService() {
         }
         if (n.isEmpty()) {
             n = nodeInfo.findAccessibilityNodeInfosByText(forceStopName)
+			n = n.filter { it.text.equals(forceStopName) }
         }
         return n
     }
