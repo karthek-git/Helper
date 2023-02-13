@@ -12,8 +12,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
@@ -24,6 +24,7 @@ import com.google.accompanist.insets.ProvideWindowInsets
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.karthek.android.s.helper.ui.AppListViewModel
 import com.karthek.android.s.helper.ui.MainActivityView
+import com.karthek.android.s.helper.ui.theme.AppTheme
 import com.karthek.android.s.helper.ui.theme.BlackSanUI
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -74,27 +75,31 @@ class MainActivity : ComponentActivity() {
 		val appIconLoader = AppIconLoader(iconSize, true, this@MainActivity)
 		Coil.setImageLoader {
 			ImageLoader.Builder(this)
-				.componentRegistry {
-					add(AppIconFetcher(appIconLoader))
-					add(ActivityIconFetcher(appIconLoader))
+				.components {
+					add(AppIconKeyer())
+					add(ActivityIconKeyer())
+					add(AppIconFetcher.Factory(appIconLoader))
+					add(ActivityIconFetcher.Factory(appIconLoader))
 				}
 				.build()
 		}
 
 		setContent {
-			BlackSanUI {
-				val systemUiController = rememberSystemUiController()
-				val useDarkIcons = MaterialTheme.colors.isLight
-				SideEffect {
-					systemUiController.setSystemBarsColor(Color.Transparent, useDarkIcons)
-				}
-				ProvideWindowInsets {
-					Surface(color = MaterialTheme.colors.background) {
-						MainActivityView(
-							viewModel = viewModel,
-							saveAppCallback = this::saveApp,
-							uninstallCallback = this::uninstall
-						)
+			AppTheme {
+				BlackSanUI {
+					val systemUiController = rememberSystemUiController()
+					val useDarkIcons = !isSystemInDarkTheme()
+					SideEffect {
+						systemUiController.setSystemBarsColor(Color.Transparent, useDarkIcons)
+					}
+					ProvideWindowInsets {
+						Surface {
+							MainActivityView(
+								viewModel = viewModel,
+								saveAppCallback = this::saveApp,
+								uninstallCallback = this::uninstall
+							)
+						}
 					}
 				}
 			}

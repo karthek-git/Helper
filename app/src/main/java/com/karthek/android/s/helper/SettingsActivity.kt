@@ -29,6 +29,7 @@ import com.google.accompanist.insets.navigationBarsPadding
 import com.google.accompanist.insets.rememberInsetsPaddingValues
 import com.google.accompanist.insets.ui.TopAppBar
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
+import com.karthek.android.s.helper.ui.theme.AppTheme
 import com.karthek.android.s.helper.ui.theme.BlackSanUI
 
 class SettingsActivity : ComponentActivity() {
@@ -36,16 +37,18 @@ class SettingsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContent {
-            BlackSanUI {
-                Surface(color = MaterialTheme.colors.background) {
-                    val systemUiController = rememberSystemUiController()
-                    val useDarkIcons = MaterialTheme.colors.isLight
-                    SideEffect {
-                        systemUiController.setSystemBarsColor(Color.Transparent, useDarkIcons)
-                    }
-                    ProvideWindowInsets {
-                        val version = remember { getVersionString() }
-                        SettingsScreen(version)
+            AppTheme {
+                BlackSanUI {
+                    Surface(color = MaterialTheme.colors.background) {
+                        val systemUiController = rememberSystemUiController()
+                        val useDarkIcons = MaterialTheme.colors.isLight
+                        SideEffect {
+                            systemUiController.setSystemBarsColor(Color.Transparent, useDarkIcons)
+                        }
+                        ProvideWindowInsets {
+                            val version = remember { getVersionString() }
+                            SettingsScreen(version)
+                        }
                     }
                 }
             }

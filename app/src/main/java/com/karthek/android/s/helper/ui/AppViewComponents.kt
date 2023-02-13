@@ -11,13 +11,9 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -25,12 +21,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.*
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.ModalBottomSheetLayout
+import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.rememberModalBottomSheetState
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
@@ -43,9 +44,10 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalTextInputService
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -54,7 +56,7 @@ import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.core.graphics.drawable.toBitmap
-import coil.compose.rememberImagePainter
+import coil.compose.rememberAsyncImagePainter
 import com.google.accompanist.insets.LocalWindowInsets
 import com.google.accompanist.insets.navigationBarsPadding
 import com.google.accompanist.insets.rememberInsetsPaddingValues
@@ -91,8 +93,7 @@ fun MainActivityView(
 
 	val scrollModifier = Modifier.offset {
 		IntOffset(
-			x = 0,
-			y = toolbarOffsetHeightPx.value.roundToInt()
+			x = 0, y = toolbarOffsetHeightPx.value.roundToInt()
 		)
 	}
 	var sheetNav by viewModel.sheetNav
@@ -102,14 +103,14 @@ fun MainActivityView(
 	BackHandler(sheetState.isVisible) {
 		scope.launch { sheetState.hide() }
 	}
-	ModalBottomSheetLayout(
-		sheetState = sheetState,
+	ModalBottomSheetLayout(sheetState = sheetState,
 		sheetShape = RoundedCornerShape(8.dp),
-		scrimColor = if (MaterialTheme.colors.isLight) {
-			MaterialTheme.colors.onSurface.copy(alpha = 0.32f)
+		scrimColor = if (!isSystemInDarkTheme()) {
+			MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f)
 		} else {
-			MaterialTheme.colors.surface.copy(alpha = 0.5f)
+			Color.Black.copy(alpha = 0.5f)
 		},
+		sheetBackgroundColor = MaterialTheme.colorScheme.background,
 		sheetContent = {
 			BottomSheetContent(
 				nav = sheetNav,
@@ -123,9 +124,8 @@ fun MainActivityView(
 					sheetNav = 1
 				}
 			}
-		}
-	) {
-		Scaffold(
+		}) {
+		androidx.compose.material.Scaffold(
 			topBar = { TopBar(viewModel, scrollModifier) },
 			floatingActionButton = {
 				KillFab(
@@ -139,15 +139,13 @@ fun MainActivityView(
 				.navigationBarsPadding(bottom = false)
 		) {
 			AppViewFragmentView(
-				viewModel = viewModel,
-				bottomSheetCallback = {
+				viewModel = viewModel, bottomSheetCallback = {
 					scope.launch {
 						sheetNav = 0
 						selectedApp = it
 						sheetState.show()
 					}
-				},
-				modifier = scrollModifier.padding(it)
+				}, modifier = scrollModifier.padding(it)
 			)
 		}
 	}
@@ -155,26 +153,25 @@ fun MainActivityView(
 
 @Composable
 fun TopBar(viewModel: AppListViewModel, modifier: Modifier) {
-	TopAppBar(
-		contentPadding = PaddingValues(vertical = 8.dp),
+	androidx.compose.material.TopAppBar(contentPadding = PaddingValues(vertical = 8.dp),
 		elevation = 0.dp,
-		backgroundColor = MaterialTheme.colors.surface,
+		backgroundColor = MaterialTheme.colorScheme.surface,
 		modifier = modifier,
-		content = { SearchBar(viewModel, Modifier.padding(horizontal = 8.dp)) }
-	)
+		content = { SearchBar(viewModel, Modifier.padding(horizontal = 8.dp)) })
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun SearchBar(viewModel: AppListViewModel, modifier: Modifier) {
-	val textInputService = LocalTextInputService.current
+	val softwareKeyboardController = LocalSoftwareKeyboardController.current
 	val focusHandler = LocalFocusManager.current
 	val focusCancel = {
-		textInputService?.hideSoftwareKeyboard()
+		softwareKeyboardController?.hide()
 		focusHandler.clearFocus()
 	}
-	Card(
+	ElevatedCard(
 		shape = RoundedCornerShape(12.dp),
-		elevation = 8.dp,
+		elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
 		modifier = modifier.padding(2.dp)
 		//.border(3.dp, MaterialTheme.colors.surface, RoundedCornerShape(12.dp))
 	) {
@@ -190,14 +187,12 @@ fun SearchBar(viewModel: AppListViewModel, modifier: Modifier) {
 					onClick = {
 						focusCancel()
 						viewModel.search("")
-					},
-					enabled = viewModel.query.isNotEmpty()
+					}, enabled = viewModel.query.isNotEmpty()
 				) {
 					Icon(
 						imageVector = if (viewModel.query.isEmpty()) Icons.Outlined.Search else Icons.Outlined.ArrowBack,
 						contentDescription = "",
-						modifier = Modifier.padding(start = 16.dp, end = 8.dp),
-						tint = MaterialTheme.colors.onSurface
+						tint = MaterialTheme.colorScheme.onSurface
 					)
 				}
 			},
@@ -209,18 +204,16 @@ fun SearchBar(viewModel: AppListViewModel, modifier: Modifier) {
 					Icon(
 						imageVector = Icons.Outlined.MoreVert,
 						contentDescription = "",
-						modifier = Modifier
-							.padding(start = 8.dp, end = 16.dp)
 					)
 				}
 			},
 			colors = TextFieldDefaults.textFieldColors(
-				backgroundColor = Color.Transparent,
+				containerColor = Color.Transparent,
 				focusedIndicatorColor = Color.Transparent,
 				unfocusedIndicatorColor = Color.Transparent,
 				disabledIndicatorColor = Color.Transparent,
-				leadingIconColor = MaterialTheme.colors.onSurface,
-				trailingIconColor = MaterialTheme.colors.onSurface,
+				focusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
+				focusedTrailingIconColor = MaterialTheme.colorScheme.onSurface,
 			),
 			modifier = Modifier.fillMaxWidth()
 		)
@@ -229,9 +222,7 @@ fun SearchBar(viewModel: AppListViewModel, modifier: Modifier) {
 
 @Composable
 fun AppViewFragmentView(
-	viewModel: AppListViewModel,
-	bottomSheetCallback: (App) -> Unit,
-	modifier: Modifier = Modifier
+	viewModel: AppListViewModel, bottomSheetCallback: (App) -> Unit, modifier: Modifier = Modifier
 ) {
 	Box {
 		AppViewList(
@@ -245,17 +236,14 @@ fun AppViewFragmentView(
 
 @Composable
 fun AppViewList(
-	viewModel: AppListViewModel,
-	bottomSheetCallback: (App) -> Unit,
-	modifier: Modifier
+	viewModel: AppListViewModel, bottomSheetCallback: (App) -> Unit, modifier: Modifier
 ) {
 	val appList = viewModel.appData
 	if (viewModel.loading) {
 		CircularProgressIndicator(
 			modifier = modifier
 				.size(64.dp)
-				.wrapContentSize(Alignment.Center),
-			strokeWidth = 4.dp
+				.wrapContentSize(Alignment.Center), strokeWidth = 4.dp
 		)
 	} else {
 		Surface {
@@ -285,8 +273,7 @@ fun AppViewListContent(
 			applyEnd = false,
 			additionalTop = 140.dp,
 			additionalBottom = 80.dp
-		),
-		modifier = Modifier.fillMaxSize()
+		), modifier = Modifier.fillMaxSize()
 	) {
 		item { ListHeader(showSystem, onShowSystem) }
 		if (appList.isEmpty()) {
@@ -310,8 +297,8 @@ fun ListHeader(showSystem: Boolean, onShowSystem: () -> Unit) {
 	Column(modifier = Modifier.fillMaxWidth()) {
 		Text(
 			text = if (showSystem) "HIDE SYSTEM" else "SHOW SYSTEM",
-			color = MaterialTheme.colors.primary,
-			style = MaterialTheme.typography.subtitle2,
+			color = MaterialTheme.colorScheme.primary,
+			style = MaterialTheme.typography.titleSmall,
 			modifier = Modifier
 				.padding(end = 16.dp)
 				.align(Alignment.End)
@@ -357,12 +344,8 @@ fun AppOptions(
 			val intent = Intent(ACTION_SEND)
 			val f = File(app.applicationInfo!!.publicSourceDir)
 			intent.putExtra(
-				Intent.EXTRA_STREAM,
-				FileProvider.getUriForFile(
-					context,
-					"${BuildConfig.APPLICATION_ID}.fileprovider",
-					f,
-					"${app.label}.apk"
+				Intent.EXTRA_STREAM, FileProvider.getUriForFile(
+					context, "${BuildConfig.APPLICATION_ID}.fileprovider", f, "${app.label}.apk"
 				)
 			)
 			intent.type = "application/vnd.android.package-archive"
@@ -380,7 +363,7 @@ fun AppOptions(
 			context.startActivity(intent)
 			callback(0)
 		}
-		if (app.applicationInfo?.flags?.and(ApplicationInfo.FLAG_SYSTEM) ?: 0 != 1) {
+		if ((app.applicationInfo?.flags?.and(ApplicationInfo.FLAG_SYSTEM) ?: 0) != 1) {
 			AppOptionsItem(icon = Icons.Outlined.Delete, text = "Uninstall") {
 				if (app.applicationInfo!!.flags and ApplicationInfo.FLAG_SYSTEM == 0) {
 					val intent = Intent(Intent.ACTION_DELETE)
@@ -394,17 +377,18 @@ fun AppOptions(
 	}
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppOptionsItem(icon: ImageVector, text: String, onClick: () -> Unit = {}) {
 	ListItem(
-		icon = { Icon(icon, contentDescription = text) },
-		text = { Text(text, fontWeight = FontWeight.SemiBold) },
+		leadingContent = { Icon(icon, contentDescription = text) },
+		headlineText = { Text(text, fontWeight = FontWeight.SemiBold) },
+		colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
 		modifier = Modifier.clickable(onClick = onClick)
 	)
 }
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppActivities(app: App) {
 	val context = LocalContext.current
@@ -412,7 +396,10 @@ fun AppActivities(app: App) {
 	val activities = app.packageInfo?.activities
 	if (activities == null) {
 		Text(
-			text = "No Activities", modifier = Modifier
+			text = "No Activities",
+			textAlign = TextAlign.Center,
+			modifier = Modifier
+				.fillMaxWidth()
 				.padding(32.dp)
 				.navigationBarsPadding()
 		)
@@ -420,51 +407,59 @@ fun AppActivities(app: App) {
 		LazyColumn(
 			contentPadding = rememberInsetsPaddingValues(
 				insets = LocalWindowInsets.current.navigationBars,
-			),
-			modifier = Modifier.padding(vertical = 8.dp)
+			), modifier = Modifier.padding(vertical = 8.dp)
 		) {
 			items(activities) {
-				ListItem(icon = {
+				ListItem(leadingContent = {
 					/*Drawable(
 						it.loadIcon(pm),
 						modifier = Modifier.requiredSize(32.dp)
 					)*/
 					Image(
-						painter = rememberImagePainter(data = it),
+						painter = rememberAsyncImagePainter(model = it),
 						contentDescription = "",
 						modifier = Modifier.requiredSize(40.dp)
 					)
-				}, secondaryText = {
-					SelectionContainer {
-						Text(text = it.name)
-					}
-				}, trailing = {
-					if (it.exported) {
-						IconButton(onClick = { createShortcut(context, it) }) {
-							Icon(
-								imageVector = Icons.Outlined.AddToHomeScreen,
-								contentDescription = "",
-								modifier = Modifier
-							)
+				},
+					supportingText = {
+						SelectionContainer {
+							Text(text = it.name)
 						}
-					}
-				}, modifier = Modifier.clickable {
-					val intent = Intent()
-					intent.component = ComponentName(it.packageName, it.name)
-					intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-					try {
-						context.startActivity(intent)
-					} catch (e: Exception) {
-						Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
-					}
-				}) {
-					Text(
-						text = it.loadLabel(pm).toString(),
-						fontWeight = FontWeight.SemiBold,
-						maxLines = 1,
-						overflow = TextOverflow.Ellipsis
-					)
-				}
+					},
+					trailingContent = {
+						if (it.exported) {
+							IconButton(onClick = {
+								createShortcut(
+									context, it
+								)
+							}) {
+								Icon(
+									imageVector = Icons.Outlined.AddToHomeScreen,
+									contentDescription = "",
+									modifier = Modifier
+								)
+							}
+						}
+					},
+					colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
+					modifier = Modifier.clickable {
+						val intent = Intent()
+						intent.component = ComponentName(it.packageName, it.name)
+						intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+						try {
+							context.startActivity(intent)
+						} catch (e: Exception) {
+							Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
+						}
+					},
+					headlineText = {
+						Text(
+							text = it.loadLabel(pm).toString(),
+							fontWeight = FontWeight.SemiBold,
+							maxLines = 1,
+							overflow = TextOverflow.Ellipsis
+						)
+					})
 			}
 		}
 	}
@@ -475,16 +470,14 @@ fun createShortcut(context: Context, activityInfo: ActivityInfo) {
 		val pm = context.packageManager
 		val intent = Intent(ACTION_CREATE_SHORTCUT)
 		val label = activityInfo.loadLabel(pm)
-			.let { if (it.isEmpty()) activityInfo.applicationInfo.loadLabel(pm) else it }
+			.let { it.ifEmpty { activityInfo.applicationInfo.loadLabel(pm) } }
 		if (label.isEmpty()) return
 		intent.component = ComponentName(activityInfo.packageName, activityInfo.name)
 		intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
 		val shortcutInfo = try {
-			ShortcutInfoCompat.Builder(context, activityInfo.name)
-				.setIntent(intent)
+			ShortcutInfoCompat.Builder(context, activityInfo.name).setIntent(intent)
 				.setShortLabel(label)
-				.setIcon(IconCompat.createWithBitmap(activityInfo.loadIcon(pm).toBitmap()))
-				.build()
+				.setIcon(IconCompat.createWithBitmap(activityInfo.loadIcon(pm).toBitmap())).build()
 		} catch (e: Exception) {
 			return
 		}
@@ -503,12 +496,12 @@ fun createShortcut(context: Context, activityInfo: ActivityInfo) {
 @Composable
 fun AppView(app: App, onCheck: (App, Boolean) -> Unit, onClick: (App) -> Unit) {
 	val context = LocalContext.current
-	Row(modifier = Modifier
-		.combinedClickable(
-			onClick = { onClick(app) },
-			onLongClick = { onAppLongClick(context, app) }
-		)
-		.padding(4.dp)) {
+	Row(
+		modifier = Modifier
+			.combinedClickable(onClick = { onClick(app) },
+				onLongClick = { onAppLongClick(context, app) })
+			.padding(4.dp)
+	) {
 		var checked by app.isSelected
 		/* val scope = rememberCoroutineScope()
 		 val icon: MutableState<Drawable?> = remember { mutableStateOf(null) }
@@ -527,7 +520,7 @@ fun AppView(app: App, onCheck: (App, Boolean) -> Unit, onClick: (App) -> Unit) {
 				 }
 		 )*/
 		Image(
-			painter = rememberImagePainter(data = app.packageInfo),
+			painter = rememberAsyncImagePainter(model = app.packageInfo),
 			contentDescription = "",
 			modifier = Modifier
 				.padding(8.dp)
@@ -550,7 +543,7 @@ fun AppView(app: App, onCheck: (App, Boolean) -> Unit, onClick: (App) -> Unit) {
 				modifier = Modifier
 					.alpha(0.7f)
 					.padding(start = 8.dp),
-				style = MaterialTheme.typography.body2,
+				style = MaterialTheme.typography.bodyMedium,
 				maxLines = 1,
 				overflow = TextOverflow.Ellipsis
 			)
@@ -562,9 +555,8 @@ fun AppView(app: App, onCheck: (App, Boolean) -> Unit, onClick: (App) -> Unit) {
 				onCheck(app, it)
 			},
 			modifier = Modifier
-				.padding(16.dp)
+				.padding(6.dp)
 				.align(Alignment.CenterVertically),
-			colors = CheckboxDefaults.colors(MaterialTheme.colors.primary)
 		)
 
 	}
@@ -577,14 +569,12 @@ fun onAppLongClick(context: Context, app: App) {
 	Toast.makeText(context, "${app.packageName} copied to clipboard", Toast.LENGTH_SHORT).show()
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun KillFab(extended: Boolean = false, onClick: () -> Unit) {
 	var isPressed by remember { mutableStateOf(false) }
 	val transition = updateTransition(targetState = isPressed, label = "")
 	val scale by transition.animateFloat(label = "") { if (it) 0.9f else 1f }
-	val modifier =
-		Modifier.navigationBarsPadding().run { if (isPressed) scale(scale) else this }
+	val modifier = Modifier.navigationBarsPadding().run { if (isPressed) scale(scale) else this }
 	val coroutineScope = rememberCoroutineScope()
 	FloatingActionButton(
 		onClick = {
@@ -594,11 +584,12 @@ fun KillFab(extended: Boolean = false, onClick: () -> Unit) {
 				delay(200)
 				isPressed = false
 			}
-		},
-		modifier = modifier.padding(8.dp)
+		}, modifier = modifier.padding(8.dp)
 	) {
 		Row(modifier = Modifier.padding(horizontal = 16.dp)) {
-			Icon(imageVector = Icons.Default.AutoFixHigh, contentDescription = "Kill")
+			Icon(
+				imageVector = Icons.Default.AutoFixHigh, contentDescription = "Kill"
+			)
 			AnimatedVisibility(extended) {
 				Text(
 					text = "Kill all",
