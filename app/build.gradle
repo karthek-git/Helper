@@ -48,14 +48,17 @@ android {
     kapt {
         correctErrorTypes true
     }
-
     packagingOptions {
-        exclude "DebugProbesKt.bin"
+        resources {
+            excludes += ['DebugProbesKt.bin']
+        }
     }
+
 
     composeOptions {
         kotlinCompilerExtensionVersion "$rootProject.compose_version"
     }
+    namespace 'com.karthek.android.s.helper'
 }
 
 dependencies {
