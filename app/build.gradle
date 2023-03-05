@@ -56,7 +56,7 @@ android {
 
 
     composeOptions {
-        kotlinCompilerExtensionVersion "$rootProject.compose_version"
+        kotlinCompilerExtensionVersion "1.2.0-rc02"
     }
     namespace 'com.karthek.android.s.helper'
 }
