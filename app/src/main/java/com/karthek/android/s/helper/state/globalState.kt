@@ -11,25 +11,26 @@ import java.util.*
 
 var f = false
 var accessibilityServiceEnabled = false
+var killStopSensitivity = 100L
 
 val appStack: Stack<String> by lazy {
-    Stack<String>()
+	Stack<String>()
 }
 
 fun stopSession() {
-    f = false
-    appStack.clear()
+	f = false
+	appStack.clear()
 }
 
 fun nextStop(context: Context) {
-    if (appStack.empty()) {
-        f = false
-        Toast.makeText(context, R.string.killed, Toast.LENGTH_SHORT).show()
-        return
-    }
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-    intent.data = Uri.parse("package:${appStack.pop()}")
-    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-    context.startActivity(intent)
+	if (appStack.empty()) {
+		f = false
+		Toast.makeText(context, R.string.killed, Toast.LENGTH_SHORT).show()
+		return
+	}
+	val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+	intent.data = Uri.parse("package:${appStack.pop()}")
+	intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+	context.startActivity(intent)
 }
 

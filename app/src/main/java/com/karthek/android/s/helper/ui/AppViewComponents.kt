@@ -1,12 +1,9 @@
 package com.karthek.android.s.helper.ui
 
 import android.content.*
-import android.content.Intent.ACTION_CREATE_SHORTCUT
 import android.content.Intent.ACTION_SEND
-import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.net.Uri
-import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -17,21 +14,13 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.ModalBottomSheetLayout
-import androidx.compose.material.ModalBottomSheetValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoFixHigh
 import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.rememberModalBottomSheetState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
@@ -43,40 +32,31 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import androidx.core.content.pm.ShortcutInfoCompat
-import androidx.core.content.pm.ShortcutManagerCompat
-import androidx.core.graphics.drawable.IconCompat
-import androidx.core.graphics.drawable.toBitmap
 import coil.compose.rememberAsyncImagePainter
-import com.google.accompanist.insets.LocalWindowInsets
-import com.google.accompanist.insets.navigationBarsPadding
-import com.google.accompanist.insets.rememberInsetsPaddingValues
-import com.google.accompanist.insets.statusBarsPadding
 import com.karthek.android.s.helper.BuildConfig
-import com.karthek.android.s.helper.SettingsActivity
+import com.karthek.android.s.helper.createShortcut
+import com.karthek.android.s.helper.onAppLongClick
 import com.karthek.android.s.helper.state.db.App
 import com.karthek.android.s.helper.ui.components.MemUsage
+import com.karthek.android.s.helper.ui.components.SearchBar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import kotlin.math.roundToInt
 
 
-@OptIn(ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainActivityView(
 	viewModel: AppListViewModel,
 	saveAppCallback: (String, String) -> Unit,
-	uninstallCallback: (Intent) -> Unit
+	uninstallCallback: (Intent) -> Unit,
 ) {
 	val toolbarHeightPx = with(LocalDensity.current) { 72.dp.roundToPx().toFloat() }
 	val toolbarOffsetHeightPx = remember { mutableStateOf(0f) }
@@ -97,21 +77,63 @@ fun MainActivityView(
 		)
 	}
 	var sheetNav by viewModel.sheetNav
-	val sheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
+	var openSheet by remember { mutableStateOf(false) }
+	val sheetState = rememberSheetState(skipHalfExpanded = true)
 	val scope = rememberCoroutineScope()
 	var selectedApp by viewModel.selectedApp
-	BackHandler(sheetState.isVisible) {
-		scope.launch { sheetState.hide() }
+
+	val closeBottomSheet = {
+		scope.launch { sheetState.hide() }.invokeOnCompletion {
+			if (!sheetState.isVisible) {
+				openSheet = false
+			}
+		}
 	}
-	ModalBottomSheetLayout(sheetState = sheetState,
-		sheetShape = RoundedCornerShape(8.dp),
-		scrimColor = if (!isSystemInDarkTheme()) {
-			MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f)
-		} else {
-			Color.Black.copy(alpha = 0.5f)
+
+	BackHandler(sheetState.isVisible) {
+		closeBottomSheet()
+	}
+
+	LaunchedEffect(key1 = sheetState.isVisible) {
+		if (!sheetState.isVisible) openSheet = false
+	}
+
+	Scaffold(
+		topBar = { TopBar(viewModel, scrollModifier) },
+		floatingActionButton = {
+			KillFab(
+				extended = toolbarOffsetHeightPx.value.roundToInt() == 0,
+				onClick = viewModel::killAll
+			)
 		},
-		sheetBackgroundColor = MaterialTheme.colorScheme.background,
-		sheetContent = {
+		modifier = Modifier
+			.nestedScroll(nestedScrollConnection)
+			.statusBarsPadding()
+	) {
+		AppViewFragmentView(
+			viewModel = viewModel, bottomSheetCallback = {
+				scope.launch {
+					sheetNav = 0
+					selectedApp = it
+					openSheet = true
+					sheetState.show()
+				}
+			}, modifier = scrollModifier.padding(it)
+		)
+
+	}
+
+	if (openSheet) {
+		ModalBottomSheet(
+			onDismissRequest = { openSheet = false },
+			sheetState = sheetState,
+			scrimColor = if (!isSystemInDarkTheme()) {
+				MaterialTheme.colorScheme.onSurface.copy(alpha = 0.32f)
+			} else {
+				Color.Black.copy(alpha = 0.5f)
+			},
+			containerColor = MaterialTheme.colorScheme.background
+		) {
 			BottomSheetContent(
 				nav = sheetNav,
 				app = selectedApp,
@@ -119,110 +141,32 @@ fun MainActivityView(
 				uninstallCallback = uninstallCallback
 			) {
 				if (it == 0) {
-					scope.launch { sheetState.hide() }
+					closeBottomSheet()
 				} else {
 					sheetNav = 1
 				}
 			}
-		}) {
-		androidx.compose.material.Scaffold(
-			topBar = { TopBar(viewModel, scrollModifier) },
-			floatingActionButton = {
-				KillFab(
-					extended = toolbarOffsetHeightPx.value.roundToInt() == 0,
-					onClick = viewModel::killAll
-				)
-			},
-			modifier = Modifier
-				.nestedScroll(nestedScrollConnection)
-				.statusBarsPadding()
-				.navigationBarsPadding(bottom = false)
-		) {
-			AppViewFragmentView(
-				viewModel = viewModel, bottomSheetCallback = {
-					scope.launch {
-						sheetNav = 0
-						selectedApp = it
-						sheetState.show()
-					}
-				}, modifier = scrollModifier.padding(it)
-			)
 		}
 	}
 }
 
 @Composable
 fun TopBar(viewModel: AppListViewModel, modifier: Modifier) {
-	androidx.compose.material.TopAppBar(contentPadding = PaddingValues(vertical = 8.dp),
-		elevation = 0.dp,
-		backgroundColor = MaterialTheme.colorScheme.surface,
-		modifier = modifier,
-		content = { SearchBar(viewModel, Modifier.padding(horizontal = 8.dp)) })
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
-@Composable
-fun SearchBar(viewModel: AppListViewModel, modifier: Modifier) {
-	val softwareKeyboardController = LocalSoftwareKeyboardController.current
-	val focusHandler = LocalFocusManager.current
-	val focusCancel = {
-		softwareKeyboardController?.hide()
-		focusHandler.clearFocus()
-	}
-	ElevatedCard(
-		shape = RoundedCornerShape(12.dp),
-		elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp),
-		modifier = modifier.padding(2.dp)
-		//.border(3.dp, MaterialTheme.colors.surface, RoundedCornerShape(12.dp))
-	) {
-		OutlinedTextField(
-			value = viewModel.query,
-			onValueChange = { viewModel.search(it) },
-			keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-			keyboardActions = KeyboardActions(onAny = { focusCancel() }),
-			singleLine = true,
-			placeholder = { Text(text = "Search apps") },
-			leadingIcon = {
-				IconButton(
-					onClick = {
-						focusCancel()
-						viewModel.search("")
-					}, enabled = viewModel.query.isNotEmpty()
-				) {
-					Icon(
-						imageVector = if (viewModel.query.isEmpty()) Icons.Outlined.Search else Icons.Outlined.ArrowBack,
-						contentDescription = "",
-						tint = MaterialTheme.colorScheme.onSurface
-					)
-				}
-			},
-			trailingIcon = {
-				val context = LocalContext.current
-				IconButton(onClick = {
-					context.startActivity(Intent(context, SettingsActivity::class.java))
-				}) {
-					Icon(
-						imageVector = Icons.Outlined.MoreVert,
-						contentDescription = "",
-					)
-				}
-			},
-			colors = TextFieldDefaults.textFieldColors(
-				containerColor = Color.Transparent,
-				focusedIndicatorColor = Color.Transparent,
-				unfocusedIndicatorColor = Color.Transparent,
-				disabledIndicatorColor = Color.Transparent,
-				focusedLeadingIconColor = MaterialTheme.colorScheme.onSurface,
-				focusedTrailingIconColor = MaterialTheme.colorScheme.onSurface,
-			),
-			modifier = Modifier.fillMaxWidth()
-		)
-	}
+	SearchBar(
+		viewModel,
+		modifier
+			.padding(
+				WindowInsets.navigationBars
+					.only(WindowInsetsSides.Horizontal)
+					.asPaddingValues()
+			)
+			.padding(horizontal = 8.dp, vertical = 8.dp)
+	)
 }
 
 @Composable
 fun AppViewFragmentView(
-	viewModel: AppListViewModel, bottomSheetCallback: (App) -> Unit, modifier: Modifier = Modifier
+	viewModel: AppListViewModel, bottomSheetCallback: (App) -> Unit, modifier: Modifier = Modifier,
 ) {
 	Box {
 		AppViewList(
@@ -236,7 +180,7 @@ fun AppViewFragmentView(
 
 @Composable
 fun AppViewList(
-	viewModel: AppListViewModel, bottomSheetCallback: (App) -> Unit, modifier: Modifier
+	viewModel: AppListViewModel, bottomSheetCallback: (App) -> Unit, modifier: Modifier,
 ) {
 	val appList = viewModel.appData
 	if (viewModel.loading) {
@@ -264,16 +208,16 @@ fun AppViewListContent(
 	showSystem: Boolean,
 	bottomSheetCallback: (App) -> Unit,
 	onShowSystem: () -> Unit,
-	onCheck: (App, Boolean) -> Unit
+	onCheck: (App, Boolean) -> Unit,
 ) {
 	LazyColumn(
-		contentPadding = rememberInsetsPaddingValues(
-			insets = LocalWindowInsets.current.navigationBars,
-			applyStart = false,
-			applyEnd = false,
-			additionalTop = 140.dp,
-			additionalBottom = 80.dp
-		), modifier = Modifier.fillMaxSize()
+		contentPadding = WindowInsets.navigationBars
+			.only(WindowInsetsSides.Horizontal)
+			.add(WindowInsets(top = 216.dp, bottom = 80.dp))
+			.asPaddingValues(),
+		modifier = Modifier
+			.fillMaxSize()
+			.navigationBarsPadding()
 	) {
 		item { ListHeader(showSystem, onShowSystem) }
 		if (appList.isEmpty()) {
@@ -313,7 +257,7 @@ fun BottomSheetContent(
 	app: App,
 	saveAppCallback: (String, String) -> Unit,
 	uninstallCallback: (Intent) -> Unit,
-	callback: (Int) -> Unit
+	callback: (Int) -> Unit,
 ) {
 	if (nav == 0) {
 		AppOptions(app, saveAppCallback, uninstallCallback, callback)
@@ -327,7 +271,7 @@ fun AppOptions(
 	app: App,
 	saveAppCallback: (String, String) -> Unit,
 	uninstallCallback: (Intent) -> Unit,
-	callback: (Int) -> Unit
+	callback: (Int) -> Unit,
 ) {
 	val context = LocalContext.current
 	Column(modifier = Modifier.navigationBarsPadding()) {
@@ -338,7 +282,6 @@ fun AppOptions(
 		}
 		AppOptionsItem(icon = Icons.Outlined.List, text = "Show Activities") {
 			callback(1)
-			//callback(0)
 		}
 		AppOptionsItem(icon = Icons.Outlined.Share, text = "Share") {
 			val intent = Intent(ACTION_SEND)
@@ -377,7 +320,6 @@ fun AppOptions(
 	}
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppOptionsItem(icon: ImageVector, text: String, onClick: () -> Unit = {}) {
 	ListItem(
@@ -388,7 +330,6 @@ fun AppOptionsItem(icon: ImageVector, text: String, onClick: () -> Unit = {}) {
 	)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppActivities(app: App) {
 	val context = LocalContext.current
@@ -405,16 +346,11 @@ fun AppActivities(app: App) {
 		)
 	} else {
 		LazyColumn(
-			contentPadding = rememberInsetsPaddingValues(
-				insets = LocalWindowInsets.current.navigationBars,
-			), modifier = Modifier.padding(vertical = 8.dp)
+			contentPadding = WindowInsets.navigationBars.asPaddingValues(),
+			modifier = Modifier.padding(vertical = 8.dp)
 		) {
 			items(activities) {
 				ListItem(leadingContent = {
-					/*Drawable(
-						it.loadIcon(pm),
-						modifier = Modifier.requiredSize(32.dp)
-					)*/
 					Image(
 						painter = rememberAsyncImagePainter(model = it),
 						contentDescription = "",
@@ -465,32 +401,6 @@ fun AppActivities(app: App) {
 	}
 }
 
-fun createShortcut(context: Context, activityInfo: ActivityInfo) {
-	if (ShortcutManagerCompat.isRequestPinShortcutSupported(context)) {
-		val pm = context.packageManager
-		val intent = Intent(ACTION_CREATE_SHORTCUT)
-		val label = activityInfo.loadLabel(pm)
-			.let { it.ifEmpty { activityInfo.applicationInfo.loadLabel(pm) } }
-		if (label.isEmpty()) return
-		intent.component = ComponentName(activityInfo.packageName, activityInfo.name)
-		intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-		val shortcutInfo = try {
-			ShortcutInfoCompat.Builder(context, activityInfo.name).setIntent(intent)
-				.setShortLabel(label)
-				.setIcon(IconCompat.createWithBitmap(activityInfo.loadIcon(pm).toBitmap())).build()
-		} catch (e: Exception) {
-			return
-		}
-		if (ShortcutManagerCompat.requestPinShortcut(context, shortcutInfo, null)) {
-			if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1) {
-				Toast.makeText(context, "Shortcut added to Home screen", Toast.LENGTH_SHORT).show()
-			}
-		} else {
-			Toast.makeText(context, "Shortcuts not supported by launcher", Toast.LENGTH_SHORT)
-				.show()
-		}
-	}
-}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -503,22 +413,6 @@ fun AppView(app: App, onCheck: (App, Boolean) -> Unit, onClick: (App) -> Unit) {
 			.padding(4.dp)
 	) {
 		var checked by app.isSelected
-		/* val scope = rememberCoroutineScope()
-		 val icon: MutableState<Drawable?> = remember { mutableStateOf(null) }
-		 scope.launch {
-			 icon.value = withContext(Dispatchers.Default) {
-				 app.applicationInfo!!.loadIcon(pm)
-			 }
-		 }
-
-		 Box(
-			 modifier = Modifier
-				 .padding(8.dp)
-				 .requiredSize(48.dp)
-				 .drawBehind {
-					 drawIntoCanvas { icon.value?.let { it1 -> drawablePainter(it1, it, size) } }
-				 }
-		 )*/
 		Image(
 			painter = rememberAsyncImagePainter(model = app.packageInfo),
 			contentDescription = "",
@@ -560,13 +454,6 @@ fun AppView(app: App, onCheck: (App, Boolean) -> Unit, onClick: (App) -> Unit) {
 		)
 
 	}
-}
-
-fun onAppLongClick(context: Context, app: App) {
-	val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-	val clip: ClipData = ClipData.newPlainText(app.label, app.packageName)
-	clipboard.setPrimaryClip(clip)
-	Toast.makeText(context, "${app.packageName} copied to clipboard", Toast.LENGTH_SHORT).show()
 }
 
 @Composable

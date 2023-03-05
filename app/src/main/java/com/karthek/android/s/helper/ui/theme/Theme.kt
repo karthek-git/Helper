@@ -2,65 +2,15 @@ package com.karthek.android.s.helper.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.darkColors
-import androidx.compose.material.lightColors
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorPalette = darkColors(
-	primary = BlueLight,
-	primaryVariant = BlueLight,
-	secondary = BlueLight,
-	secondaryVariant = BlueLight,
-	background = Color.Black,
-	surface = Color.Black,
-	error = Color(0xFFCF6679),
-	onPrimary = Color.Black,
-	onSecondary = Color.Black,
-	onBackground = Color.White,
-	onSurface = Color.White,
-	onError = Color.Black
-)
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 
-private val LightColorPalette = lightColors(
-	primary = Blue600,
-	primaryVariant = Blue600,
-	secondary = Blue600,
-	secondaryVariant = Blue600,
-	background = Color.White,
-	surface = Color.White,
-	error = Color(0xFFB00020),
-	onPrimary = Color.White,
-	onSecondary = Color.White,
-	onBackground = Color.Black,
-	onSurface = Color.Black,
-	onError = Color.White
-)
-
-@Composable
-fun BlackSanUI(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-	val colors = if (darkTheme) {
-		DarkColorPalette
-	} else {
-		LightColorPalette
-	}
-
-	MaterialTheme(
-		colors = colors,
-		typography = Typography,
-		shapes = Shapes,
-		content = content
-	)
-}
-
-private val LightColors = lightColorScheme(
+private val LightColorScheme = lightColorScheme(
 	primary = md_theme_light_primary,
 	onPrimary = md_theme_light_onPrimary,
 	primaryContainer = md_theme_light_primaryContainer,
@@ -91,7 +41,7 @@ private val LightColors = lightColorScheme(
 )
 
 
-private val DarkColors = darkColorScheme(
+private val DarkColorScheme = darkColorScheme(
 	primary = md_theme_dark_primary,
 	onPrimary = md_theme_dark_onPrimary,
 	primaryContainer = md_theme_dark_primaryContainer,
@@ -123,18 +73,26 @@ private val DarkColors = darkColorScheme(
 
 @Composable
 fun AppTheme(
-	useDarkTheme: Boolean = isSystemInDarkTheme(),
-	content: @Composable() () -> Unit
+	darkTheme: Boolean = isSystemInDarkTheme(),
+	dynamicColor: Boolean = true,
+	content: @Composable () -> Unit
 ) {
-	val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 	val colorScheme = when {
-		dynamicColor && useDarkTheme -> dynamicDarkColorScheme(LocalContext.current).copy(surface = Color.Black)
-		dynamicColor && !useDarkTheme -> dynamicLightColorScheme(LocalContext.current)
-		useDarkTheme -> DarkColors
-		else -> LightColors
+		dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+			val context = LocalContext.current
+			if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+		}
+		darkTheme -> DarkColorScheme
+		else -> LightColorScheme
 	}
 
-	androidx.compose.material3.MaterialTheme(
+	val systemUiController = rememberSystemUiController()
+	val useDarkIcons = !isSystemInDarkTheme()
+	SideEffect {
+		systemUiController.setSystemBarsColor(Color.Transparent, useDarkIcons)
+	}
+
+	MaterialTheme(
 		colorScheme = colorScheme,
 		content = content
 	)

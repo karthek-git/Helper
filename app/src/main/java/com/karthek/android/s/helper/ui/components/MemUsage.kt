@@ -4,10 +4,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -35,7 +32,7 @@ fun MemUsageContent(memPercent: String, s_used: String, s_free: String, modifier
 		modifier = modifier
 			.padding(8.dp),
 		shape = RoundedCornerShape(8.dp),
-		elevation = CardDefaults.elevatedCardElevation(defaultElevation = 8.dp)
+		elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp)
 	) {
 		ConstraintLayout(
 			modifier = Modifier
@@ -51,7 +48,7 @@ fun MemUsageContent(memPercent: String, s_used: String, s_free: String, modifier
 					start.linkTo(parent.start)
 					top.linkTo(parent.top)
 				})
-			androidx.compose.material3.LinearProgressIndicator(progress = 0.6f, modifier = Modifier
+			LinearProgressIndicator(progress = 0.6f, modifier = Modifier
 				.constrainAs(progress) {
 					width = Dimension.fillToConstraints
 					start.linkTo(parent.start)

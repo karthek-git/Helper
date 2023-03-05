@@ -6,14 +6,14 @@ import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import com.karthek.android.s.helper.state.*
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class ShortcutActivity : AppCompatActivity() {
+class ShortcutActivity : ComponentActivity() {
 
 	@Inject
 	lateinit var repo: AppAccess

@@ -7,10 +7,7 @@ import android.content.res.Resources
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import com.karthek.android.s.helper.state.accessibilityServiceEnabled
-import com.karthek.android.s.helper.state.f
-import com.karthek.android.s.helper.state.nextStop
-import com.karthek.android.s.helper.state.stopSession
+import com.karthek.android.s.helper.state.*
 
 class KillStopService : AccessibilityService() {
 
@@ -22,18 +19,17 @@ class KillStopService : AccessibilityService() {
 		super.onServiceConnected()
 		accessibilityServiceEnabled = true
 		initNames()
-		log("onsercon")
+		serviceInfo = serviceInfo.apply {
+			notificationTimeout = killStopSensitivity
+		}
+		log("on ser con")
 	}
 
 	override fun onAccessibilityEvent(event: AccessibilityEvent) {
-		log("onaccesevent $pos $f ${event.source}")
+		log("on access event $pos $f ${event.source}")
 		if (!f) return
-		// get the source node of the event
 		if (event.source == null) goBack()
 		val nodeInfo = event.source ?: return
-		// Use the event and node information to determine
-		// what action to take
-		//nodeInfo.getChild(3).performAction(AccessibilityNodeInfo.ACTION_SELECT);
 		var nodeInfoList: List<AccessibilityNodeInfo>? = null
 		when (pos) {
 			0 -> nodeInfoList = nodeInfo.findAccessibilityNodeInfosByText(forceStopName)
@@ -47,14 +43,14 @@ class KillStopService : AccessibilityService() {
 			n.recycle()
 			pos++
 		} else {
-			log("nodeinflist null")
+			log("nodeInfoList null")
 			return
 		}
 		nodeInfo.recycle()
 	}
 
 	override fun onInterrupt() {
-		log("oninterrupt")
+		log("on interrupt")
 		stopSession()
 	}
 
@@ -82,12 +78,12 @@ class KillStopService : AccessibilityService() {
 		}
 		try {
 			forceStopName = getName("force_stop")
-		} catch (e: Resources.NotFoundException) {
+		} catch (_: Resources.NotFoundException) {
 		}
 
 		try {
 			dlgOkName = getName("dlg_ok")
-		} catch (e: Resources.NotFoundException) {
+		} catch (_: Resources.NotFoundException) {
 		}
 	}
 
@@ -104,10 +100,10 @@ class KillStopService : AccessibilityService() {
 	}
 
 	private fun goBack() {
-		log("back "+performGlobalAction(GLOBAL_ACTION_BACK).toString())
+		log("back " + performGlobalAction(GLOBAL_ACTION_BACK).toString())
 		pos = 0
 		nextStop(this)
 	}
 
-	private fun log(s: String) = Log.v("axcer", s)
+	private fun log(s: String) = Log.d("kill stop log", s)
 }

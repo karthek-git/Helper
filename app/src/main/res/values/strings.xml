@@ -1,16 +1,23 @@
 <resources>
-    <string name="app_name">Helper</string>
-    <string name="app_icon">App icon</string>
-    <string name="uninstall">Uninstall</string>
-    <string name="share">Share</string>
-    <string name="add">Add</string>
-    <string name="kill">Kill</string>
-    <string name="killed">Killed</string>
-    <string name="memory">Memory</string>
-    <string name="usage">usage</string>
-    <string name="kill_stop">Kill stop</string>
-    <string name="enable_as">Enable accessibility service</string>
-    <string name="as_desc">Enable this to use automatic force-stop feature</string>
-    <string name="title_activity_settings">SettingsActivity</string>
-    <string name="title_activity_licenses">LicensesActivity</string>
+	<string name="app_name">Helper</string>
+	<string name="app_icon">App icon</string>
+	<string name="go_back">Go back</string>
+	<string name="uninstall">Uninstall</string>
+	<string name="share">Share</string>
+	<string name="add">Add</string>
+	<string name="kill">Kill</string>
+	<string name="killed">Killed</string>
+	<string name="memory">Memory</string>
+	<string name="usage">usage</string>
+	<string name="kill_stop">Kill stop</string>
+	<string name="enable_as">Enable accessibility service</string>
+	<string name="as_desc">Enable this to use automatic force-stop feature</string>
+	<string name="ks_msg">
+		1. As a typical android app’s Linux process won’t simply stop when exited and can restart when
+		killed with “kill -s 9 app”. \n\n
+		2. It force-stops the app by simulating a user click in AppInfo page by
+		registering as an accessibility-service which puts the app in stopped state.
+	</string>
+	<string name="title_activity_settings">SettingsActivity</string>
+	<string name="title_activity_licenses">LicensesActivity</string>
 </resources>
