@@ -78,7 +78,7 @@ fun MainActivityView(
 	}
 	var sheetNav by viewModel.sheetNav
 	var openSheet by remember { mutableStateOf(false) }
-	val sheetState = rememberSheetState(skipHalfExpanded = true)
+	val sheetState = rememberModalBottomSheetState()
 	val scope = rememberCoroutineScope()
 	var selectedApp by viewModel.selectedApp
 
@@ -124,6 +124,7 @@ fun MainActivityView(
 	}
 
 	if (openSheet) {
+		val systemBarHeight = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 		ModalBottomSheet(
 			onDismissRequest = { openSheet = false },
 			sheetState = sheetState,
@@ -132,7 +133,9 @@ fun MainActivityView(
 			} else {
 				Color.Black.copy(alpha = 0.5f)
 			},
-			containerColor = MaterialTheme.colorScheme.background
+			containerColor = MaterialTheme.colorScheme.background, modifier = Modifier
+				.fillMaxWidth()
+				.offset(y = systemBarHeight)
 		) {
 			BottomSheetContent(
 				nav = sheetNav,
@@ -217,7 +220,6 @@ fun AppViewListContent(
 			.asPaddingValues(),
 		modifier = Modifier
 			.fillMaxSize()
-			.navigationBarsPadding()
 	) {
 		item { ListHeader(showSystem, onShowSystem) }
 		if (appList.isEmpty()) {
@@ -324,7 +326,7 @@ fun AppOptions(
 fun AppOptionsItem(icon: ImageVector, text: String, onClick: () -> Unit = {}) {
 	ListItem(
 		leadingContent = { Icon(icon, contentDescription = text) },
-		headlineText = { Text(text, fontWeight = FontWeight.SemiBold) },
+		headlineContent = { Text(text, fontWeight = FontWeight.SemiBold) },
 		colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
 		modifier = Modifier.clickable(onClick = onClick)
 	)
@@ -357,7 +359,7 @@ fun AppActivities(app: App) {
 						modifier = Modifier.requiredSize(40.dp)
 					)
 				},
-					supportingText = {
+					supportingContent = {
 						SelectionContainer {
 							Text(text = it.name)
 						}
@@ -388,7 +390,7 @@ fun AppActivities(app: App) {
 							Toast.makeText(context, e.message, Toast.LENGTH_SHORT).show()
 						}
 					},
-					headlineText = {
+					headlineContent = {
 						Text(
 							text = it.loadLabel(pm).toString(),
 							fontWeight = FontWeight.SemiBold,

@@ -51,7 +51,7 @@ class SettingsActivity : ComponentActivity() {
 	fun SettingsScreen(version: String) {
 		CommonScaffold(name = "About", onBackClick = { this.finish() }) { paddingValues ->
 			Column(modifier = Modifier.padding(paddingValues)) {
-				ListItem(headlineText = { Text(text = "Kill Stop") },
+				ListItem(headlineContent = { Text(text = "Kill Stop") },
 					modifier = Modifier.clickable {
 						startActivity(
 							Intent(
@@ -63,19 +63,19 @@ class SettingsActivity : ComponentActivity() {
 				)
 				Divider()
 				ListItem(
-					headlineText = { Text(text = "Version") },
-					supportingText = { Text(text = version, fontWeight = FontWeight.Light) }
+					headlineContent = { Text(text = "Version") },
+					supportingContent = { Text(text = version, fontWeight = FontWeight.Light) }
 				)
 				Divider()
 				ListItem(
-					headlineText = { Text(text = "Privacy Policy") },
+					headlineContent = { Text(text = "Privacy Policy") },
 					modifier = Modifier.clickable {
 						val uri =
 							Uri.parse("https://policies.karthek.com/Helper/-/blob/master/privacy.md")
 						startActivity(Intent(Intent.ACTION_VIEW, uri))
 					})
 				Divider()
-				ListItem(headlineText = { Text(text = "Open source licenses") },
+				ListItem(headlineContent = { Text(text = "Open source licenses") },
 					modifier = Modifier.clickable { startLicensesActivity() }
 				)
 			}
