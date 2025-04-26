@@ -9,19 +9,22 @@ import android.util.DisplayMetrics
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts.CreateDocument
 import androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult
 import androidx.activity.viewModels
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.lifecycleScope
 import coil.Coil
 import coil.ImageLoader
 import com.karthek.android.s.helper.ui.AppListViewModel
 import com.karthek.android.s.helper.ui.MainActivityView
+import com.karthek.android.s.helper.ui.components.ScaleIndication
 import com.karthek.android.s.helper.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -70,7 +73,7 @@ class MainActivity : ComponentActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		WindowCompat.setDecorFitsSystemWindows(window, false)
+		enableEdgeToEdge()
 		val iconSize = 48 * (resources.displayMetrics.densityDpi / DisplayMetrics.DENSITY_DEFAULT)
 		val appIconLoader = AppIconLoader(iconSize, true, this@MainActivity)
 		Coil.setImageLoader {
@@ -100,11 +103,13 @@ class MainActivity : ComponentActivity() {
 	fun ScreenContent() {
 		AppTheme {
 			Surface(modifier = Modifier.fillMaxSize()) {
-				MainActivityView(
-					viewModel = viewModel,
-					saveAppCallback = this::saveApp,
-					uninstallCallback = this::uninstall
-				)
+				CompositionLocalProvider(LocalIndication provides ScaleIndication) {
+					MainActivityView(
+						viewModel = viewModel,
+						saveAppCallback = this::saveApp,
+						uninstallCallback = this::uninstall
+					)
+				}
 			}
 		}
 	}

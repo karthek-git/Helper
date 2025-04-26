@@ -16,9 +16,14 @@ import com.karthek.android.s.helper.state.AppAccess
 import com.karthek.android.s.helper.state.db.App
 import com.karthek.android.s.helper.state.db.AppComparator
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
-import java.util.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
+import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -121,7 +126,7 @@ class AppListViewModel @Inject constructor(
             infoList.map {
                 App(
                     it,
-                    it.applicationInfo.loadLabel(pm).toString(),
+                    it.applicationInfo!!.loadLabel(pm).toString(),
                     sAppList.contains(it.packageName)
                 )
             }.sortedWith(AppComparator())

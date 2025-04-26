@@ -2,11 +2,11 @@ package com.karthek.android.s.helper.state
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
+import androidx.core.net.toUri
 import com.karthek.android.s.helper.R
-import java.util.*
+import java.util.Stack
 
 
 var f = false
@@ -29,7 +29,7 @@ fun nextStop(context: Context) {
 		return
 	}
 	val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-	intent.data = Uri.parse("package:${appStack.pop()}")
+	intent.data = "package:${appStack.pop()}".toUri()
 	intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
 	context.startActivity(intent)
 }

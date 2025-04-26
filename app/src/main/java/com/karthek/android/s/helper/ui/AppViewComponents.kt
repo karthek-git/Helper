@@ -1,25 +1,73 @@
 package com.karthek.android.s.helper.ui
 
-import android.content.*
+import android.content.ComponentName
+import android.content.Intent
 import android.content.Intent.ACTION_SEND
 import android.content.pm.ApplicationInfo
-import android.net.Uri
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.add
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.AddToHomeScreen
+import androidx.compose.material.icons.automirrored.outlined.Launch
+import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.filled.AutoFixHigh
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.SaveAlt
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -38,6 +86,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import coil.compose.rememberAsyncImagePainter
 import com.karthek.android.s.helper.BuildConfig
 import com.karthek.android.s.helper.createShortcut
@@ -59,7 +108,7 @@ fun MainActivityView(
 	uninstallCallback: (Intent) -> Unit,
 ) {
 	val toolbarHeightPx = with(LocalDensity.current) { 72.dp.roundToPx().toFloat() }
-	val toolbarOffsetHeightPx = remember { mutableStateOf(0f) }
+	val toolbarOffsetHeightPx = remember { mutableFloatStateOf(0f) }
 	val nestedScrollConnection = remember {
 		object : NestedScrollConnection {
 			override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -216,7 +265,7 @@ fun AppViewListContent(
 	LazyColumn(
 		contentPadding = WindowInsets.navigationBars
 			.only(WindowInsetsSides.Horizontal)
-			.add(WindowInsets(top = 216.dp, bottom = 80.dp))
+			.add(WindowInsets(top = 200.dp, bottom = 80.dp))
 			.asPaddingValues(),
 		modifier = Modifier
 			.fillMaxSize()
@@ -241,15 +290,18 @@ fun AppViewListContent(
 @Composable
 fun ListHeader(showSystem: Boolean, onShowSystem: () -> Unit) {
 	Column(modifier = Modifier.fillMaxWidth()) {
-		Text(
-			text = if (showSystem) "HIDE SYSTEM" else "SHOW SYSTEM",
-			color = MaterialTheme.colorScheme.primary,
-			style = MaterialTheme.typography.titleSmall,
+		TextButton(
+			onClick = onShowSystem,
 			modifier = Modifier
 				.padding(end = 16.dp)
 				.align(Alignment.End)
-				.clickable(onClick = onShowSystem)
-		)
+		) {
+			Text(
+				text = if (showSystem) "HIDE SYSTEM" else "SHOW SYSTEM",
+				color = MaterialTheme.colorScheme.primary,
+				style = MaterialTheme.typography.titleSmall
+			)
+		}
 	}
 }
 
@@ -277,12 +329,12 @@ fun AppOptions(
 ) {
 	val context = LocalContext.current
 	Column(modifier = Modifier.navigationBarsPadding()) {
-		AppOptionsItem(icon = Icons.Outlined.Launch, text = "Launch") {
+		AppOptionsItem(icon = Icons.AutoMirrored.Outlined.Launch, text = "Launch") {
 			val intent = context.packageManager.getLaunchIntentForPackage(app.packageName)
 			intent?.let { context.startActivity(intent) }
 			callback(0)
 		}
-		AppOptionsItem(icon = Icons.Outlined.List, text = "Show Activities") {
+		AppOptionsItem(icon = Icons.AutoMirrored.Outlined.List, text = "Show Activities") {
 			callback(1)
 		}
 		AppOptionsItem(icon = Icons.Outlined.Share, text = "Share") {
@@ -304,7 +356,7 @@ fun AppOptions(
 		}
 		AppOptionsItem(icon = Icons.Outlined.Info, text = "App Info") {
 			val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-			intent.data = Uri.parse("package:" + app.packageName)
+			intent.data = "package:${app.packageName}".toUri()
 			context.startActivity(intent)
 			callback(0)
 		}
@@ -312,7 +364,7 @@ fun AppOptions(
 			AppOptionsItem(icon = Icons.Outlined.Delete, text = "Uninstall") {
 				if (app.applicationInfo!!.flags and ApplicationInfo.FLAG_SYSTEM == 0) {
 					val intent = Intent(Intent.ACTION_DELETE)
-					intent.data = Uri.parse("package:${app.packageName}")
+					intent.data = "package:${app.packageName}".toUri()
 					intent.putExtra(Intent.EXTRA_RETURN_RESULT, true)
 					uninstallCallback(intent)
 				}
@@ -352,13 +404,14 @@ fun AppActivities(app: App) {
 			modifier = Modifier.padding(vertical = 8.dp)
 		) {
 			items(activities) {
-				ListItem(leadingContent = {
-					Image(
-						painter = rememberAsyncImagePainter(model = it),
-						contentDescription = "",
-						modifier = Modifier.requiredSize(40.dp)
-					)
-				},
+				ListItem(
+					leadingContent = {
+						Image(
+							painter = rememberAsyncImagePainter(model = it),
+							contentDescription = "",
+							modifier = Modifier.requiredSize(40.dp)
+						)
+					},
 					supportingContent = {
 						SelectionContainer {
 							Text(text = it.name)
@@ -372,7 +425,7 @@ fun AppActivities(app: App) {
 								)
 							}) {
 								Icon(
-									imageVector = Icons.Outlined.AddToHomeScreen,
+									imageVector = Icons.AutoMirrored.Outlined.AddToHomeScreen,
 									contentDescription = "",
 									modifier = Modifier
 								)
@@ -410,7 +463,8 @@ fun AppView(app: App, onCheck: (App, Boolean) -> Unit, onClick: (App) -> Unit) {
 	val context = LocalContext.current
 	Row(
 		modifier = Modifier
-			.combinedClickable(onClick = { onClick(app) },
+			.combinedClickable(
+				onClick = { onClick(app) },
 				onLongClick = { onAppLongClick(context, app) })
 			.padding(4.dp)
 	) {

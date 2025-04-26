@@ -10,7 +10,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -32,12 +41,16 @@ fun SearchBar(viewModel: AppListViewModel, modifier: Modifier) {
 		softwareKeyboardController?.hide()
 		focusHandler.clearFocus()
 	}
-	ElevatedCard(
+	Card(
 		shape = RoundedCornerShape(12.dp),
+		colors = CardDefaults.cardColors(
+			containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp)
+		),
 		elevation = CardDefaults.elevatedCardElevation(defaultElevation = 4.dp),
-		modifier = modifier.padding(2.dp)
+		modifier = modifier.padding(horizontal = 2.dp)
 		//.border(3.dp, MaterialTheme.colors.surface, RoundedCornerShape(12.dp))
-	) {
+	)
+	{
 		OutlinedTextField(
 			value = viewModel.query,
 			onValueChange = { viewModel.search(it) },
@@ -70,8 +83,9 @@ fun SearchBar(viewModel: AppListViewModel, modifier: Modifier) {
 					)
 				}
 			},
-			colors = TextFieldDefaults.textFieldColors(
-				containerColor = Color.Transparent,
+			colors = TextFieldDefaults.colors(
+				focusedContainerColor = Color.Transparent,
+				unfocusedContainerColor = Color.Transparent,
 				focusedIndicatorColor = Color.Transparent,
 				unfocusedIndicatorColor = Color.Transparent,
 				disabledIndicatorColor = Color.Transparent,

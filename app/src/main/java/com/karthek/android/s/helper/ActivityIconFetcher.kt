@@ -23,11 +23,11 @@ import java.util.concurrent.ConcurrentLinkedQueue
 
 class AppIconFetcher(
 	private val appIconLoader: AppIconLoader,
-	private val applicationInfo: ApplicationInfo
+	private val applicationInfo: ApplicationInfo?
 ) : Fetcher {
 
 	override suspend fun fetch(): FetchResult {
-		return DrawableResult(appIconLoader.loadIcon(applicationInfo), true, DataSource.DISK)
+		return DrawableResult(appIconLoader.loadIcon(applicationInfo!!), true, DataSource.DISK)
 	}
 
 	class Factory(private val appIconLoader: AppIconLoader) : Fetcher.Factory<PackageInfo> {
