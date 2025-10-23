@@ -3,11 +3,14 @@ package com.karthek.android.s.helper
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
-import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import com.karthek.android.s.helper.state.*
+import com.karthek.android.s.helper.state.AppAccess
+import com.karthek.android.s.helper.state.accessibilityServiceEnabled
+import com.karthek.android.s.helper.state.appStack
+import com.karthek.android.s.helper.state.f
+import com.karthek.android.s.helper.state.nextStop
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
@@ -61,7 +64,8 @@ class ShortcutActivity : ComponentActivity() {
 
 	private fun showAccessibilityDialog() {
 		Toast.makeText(this, R.string.enable_as, Toast.LENGTH_SHORT).show()
-		startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+		//startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+		startActivity(Intent(this, KillStopConfigActivity::class.java))
 	}
 }
 

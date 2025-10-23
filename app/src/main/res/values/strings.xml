@@ -16,11 +16,11 @@
 		As a typical android app’s Linux process won’t simply stop when exited and can restart when
 		killed with “kill -s 9 app”. \n\n
 		Kill Stop feature can be used to stop the app. It force-stops the app by simulating
-		a user click in AppInfo page by registering as an accessibility-service which puts the app
+		a user click in AppInfo page by registering as an Accessibility Service which puts the app
 		in stopped state. \n\n
 		Only the apps selected are stopped and they can be resumed by opening them again from either
 		the launcher or any other screen. The apps that are not selected are not affected by this
-		and are never stopped.
+		and are never stopped. No data is collected or shared using this service.
 	</string>
 	<string name="title_activity_settings">SettingsActivity</string>
 	<string name="title_activity_licenses">LicensesActivity</string>

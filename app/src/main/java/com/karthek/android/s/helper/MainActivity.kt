@@ -22,11 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import coil.Coil
 import coil.ImageLoader
+import com.google.android.gms.ads.MobileAds
 import com.karthek.android.s.helper.ui.AppListViewModel
-import com.karthek.android.s.helper.ui.MainActivityView
 import com.karthek.android.s.helper.ui.components.ScaleIndication
+import com.karthek.android.s.helper.ui.screens.MainScreen
 import com.karthek.android.s.helper.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -88,6 +90,11 @@ class MainActivity : ComponentActivity() {
 		}
 
 		setContent { ScreenContent() }
+
+		val backgroundScope = CoroutineScope(Dispatchers.IO)
+		backgroundScope.launch {
+			MobileAds.initialize(this@MainActivity) {}
+		}
 	}
 
 	private fun uninstall(intent: Intent) {
@@ -104,7 +111,7 @@ class MainActivity : ComponentActivity() {
 		AppTheme {
 			Surface(modifier = Modifier.fillMaxSize()) {
 				CompositionLocalProvider(LocalIndication provides ScaleIndication) {
-					MainActivityView(
+					MainScreen(
 						viewModel = viewModel,
 						saveAppCallback = this::saveApp,
 						uninstallCallback = this::uninstall

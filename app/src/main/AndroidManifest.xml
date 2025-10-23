@@ -20,7 +20,13 @@
 		android:roundIcon="@mipmap/ic_launcher_round"
 		android:supportsRtl="true"
 		android:theme="@style/BlackSanUI"
+		android:enableOnBackInvokedCallback="true"
 		tools:ignore="UnusedAttribute">
+
+		<meta-data
+			android:name="com.google.android.gms.ads.APPLICATION_ID"
+			android:value="ca-app-pub-2240982710415001~1312140687"/>
+
 		<activity
 			android:name=".MainActivity"
 			android:exported="true">

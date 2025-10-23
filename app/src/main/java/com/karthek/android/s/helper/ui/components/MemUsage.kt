@@ -1,5 +1,7 @@
 package com.karthek.android.s.helper.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -8,6 +10,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ProgressIndicatorDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
@@ -17,28 +20,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastRoundToInt
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import com.karthek.android.s.helper.ui.AppListViewModel.MemUsage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 
 @Composable
-fun MemUsage(flow: Flow<Array<String>>, modifier: Modifier) {
+fun MemUsageComponent(flow: Flow<MemUsage>, modifier: Modifier) {
 	val memUsage by flow.collectAsState(
-		initial = arrayOf("0", "0 GB / 0 GB", "0 GB"),
+		initial = MemUsage(0f, "0 GB / 0 GB", "0 GB"),
 		context = Dispatchers.Default
 	)
-	MemUsageContent(memUsage[0], memUsage[1], memUsage[2], modifier)
+	Column(modifier = modifier) {
+		MemUsageContent(memUsage.u, memUsage.a, memUsage.f)
+		BannerAdComponentContainer()
+	}
 }
 
 @Composable
-fun MemUsageContent(memPercent: String, s_used: String, s_free: String, modifier: Modifier) {
-	Card(shape = RoundedCornerShape(8.dp),
+fun MemUsageContent(memPercent: Float, s_used: String, s_free: String) {
+	val animatedProgress by animateFloatAsState(
+		targetValue = memPercent,
+		animationSpec = ProgressIndicatorDefaults.ProgressAnimationSpec
+	)
+	Card(
+		shape = RoundedCornerShape(8.dp),
 		colors = CardDefaults.cardColors(
 			containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp) // todo(temp fix for compose m3 car elevation color issue)
 		),
 		elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-		modifier = modifier.padding(8.dp)
+		modifier = Modifier.padding(8.dp)
 	) {
 		ConstraintLayout(
 			modifier = Modifier
@@ -56,7 +69,7 @@ fun MemUsageContent(memPercent: String, s_used: String, s_free: String, modifier
 					top.linkTo(parent.top)
 				})
 			LinearProgressIndicator(
-				progress = 0.6f, modifier = Modifier
+				progress = { animatedProgress }, modifier = Modifier
 					.constrainAs(progress) {
 						width = Dimension.fillToConstraints
 						start.linkTo(parent.start)
@@ -66,7 +79,7 @@ fun MemUsageContent(memPercent: String, s_used: String, s_free: String, modifier
 					.height(8.dp)
 					.clip(RoundedCornerShape(4.dp)))
 			Text(
-				text = memPercent,
+				text = (memPercent * 100).fastRoundToInt().toString(),
 				fontSize = 34.sp,
 				color = MaterialTheme.colorScheme.primary,
 				modifier = Modifier.constrainAs(percent) {

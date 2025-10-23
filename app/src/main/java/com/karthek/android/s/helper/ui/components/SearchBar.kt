@@ -1,6 +1,5 @@
 package com.karthek.android.s.helper.ui.components
 
-import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,17 +23,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import com.karthek.android.s.helper.SettingsActivity
 import com.karthek.android.s.helper.ui.AppListViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
-fun SearchBar(viewModel: AppListViewModel, modifier: Modifier) {
+fun SearchBar(viewModel: AppListViewModel, modifier: Modifier, onMoreClick: () -> Unit) {
 	val softwareKeyboardController = LocalSoftwareKeyboardController.current
 	val focusHandler = LocalFocusManager.current
 	val focusCancel = {
@@ -73,10 +70,7 @@ fun SearchBar(viewModel: AppListViewModel, modifier: Modifier) {
 				}
 			},
 			trailingIcon = {
-				val context = LocalContext.current
-				IconButton(onClick = {
-					context.startActivity(Intent(context, SettingsActivity::class.java))
-				}) {
+				IconButton(onClick = onMoreClick) {
 					Icon(
 						imageVector = Icons.Outlined.MoreVert,
 						contentDescription = "",
