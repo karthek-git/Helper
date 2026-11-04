@@ -31,7 +31,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -40,9 +39,7 @@ import com.karthek.android.s.helper.R
 import com.karthek.android.s.helper.state.Prefs
 import com.karthek.android.s.helper.state.accessibilityServiceEnabled
 import com.karthek.android.s.helper.state.killStopSensitivity
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @Composable
 fun KillStopConfigScreenContent(
@@ -98,7 +95,6 @@ fun KillStopMessage(prefs: Prefs, onClickEnable: () -> Unit) {
 			horizontalAlignment = Alignment.CenterHorizontally
 		) {
 			if (checked && !mAccessibilityServiceEnabled) {
-				//Text("By clicking ENABLE, you agree to register this App as an Accessibility Service")
 				Spacer(modifier = Modifier.height(16.dp))
 				Text("Click ENABLE to open Accessibility screen to enable the Kill Stop service")
 				Spacer(modifier = Modifier.height(32.dp))
@@ -107,7 +103,7 @@ fun KillStopMessage(prefs: Prefs, onClickEnable: () -> Unit) {
 				}
 			}
 			if (mAccessibilityServiceEnabled) {
-				SensitivityComponent()
+				SensitivityComponent(prefs)
 				Text("Click DISABLE to open Accessibility screen to disable the Kill Stop service")
 				Spacer(modifier = Modifier.height(32.dp))
 				Button(onClick = onClickEnable) {
@@ -119,29 +115,30 @@ fun KillStopMessage(prefs: Prefs, onClickEnable: () -> Unit) {
 }
 
 @Composable
-fun SensitivityComponent() {
-	var sliderPosition by remember { mutableFloatStateOf(killStopSensitivity.toFloat()) }
+fun SensitivityComponent(prefs: Prefs) {
+	val sensitivity by prefs.sensitivityFlow.collectAsState(initial = killStopSensitivity)
+	var sliderPosition by remember(sensitivity) { mutableFloatStateOf(sensitivity.toFloat()) }
+	val coroutineScope = rememberCoroutineScope()
+
 	Column(modifier = Modifier.padding(vertical = 32.dp)) {
 		Row(modifier = Modifier.padding(bottom = 8.dp)) {
 			Text(text = "Kill Stop Time Sensitivity", style = MaterialTheme.typography.labelLarge)
 			Spacer(modifier = Modifier.width(32.dp))
-			Text(text = sliderPosition.toString(), style = MaterialTheme.typography.bodyMedium)
+			Text(text = sliderPosition.toLong().toString(), style = MaterialTheme.typography.bodyMedium)
 		}
 		Slider(
-			modifier = Modifier.semantics { contentDescription = "Localized Description" },
+			modifier = Modifier.semantics { contentDescription = "Kill Stop Sensitivity Slider" },
 			value = sliderPosition,
 			onValueChange = { sliderPosition = it },
 			valueRange = 100f..500f,
 			onValueChangeFinished = {
-				killStopSensitivity = sliderPosition.toLong()
+				val newSensitivity = sliderPosition.toLong()
+				killStopSensitivity = newSensitivity
+				coroutineScope.launch {
+					prefs.onSensitivityChange(newSensitivity)
+				}
 			},
 			steps = 7
 		)
 	}
-}
-
-@HiltViewModel
-class KillStopConfigViewModel @Inject constructor(val prefs: Prefs) :
-	ViewModel() {
-
 }

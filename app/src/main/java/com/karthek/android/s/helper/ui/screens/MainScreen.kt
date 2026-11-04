@@ -16,13 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
-import androidx.navigation3.runtime.entry
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
-import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import androidx.navigation3.ui.rememberSceneSetupNavEntryDecorator
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.karthek.android.s.helper.KillStopConfigScreen
 import com.karthek.android.s.helper.LicensesContent
@@ -63,9 +59,6 @@ fun MainScreen(
 	NavDisplay(
 		backStack = backStack,
 		entryDecorators = listOf(
-			rememberSceneSetupNavEntryDecorator(),
-			rememberSavedStateNavEntryDecorator(),
-			rememberViewModelStoreNavEntryDecorator()
 		),
 		transitionSpec = {
 			slideInHorizontally(initialOffsetX = { it }) togetherWith
@@ -96,7 +89,7 @@ fun MainScreen(
 					Column(
 						modifier = Modifier
 							.fillMaxWidth()
-							.height(80.dp)
+							.height(84.dp)
 					) { }
 				}
 			}
